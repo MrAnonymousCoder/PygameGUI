@@ -5,7 +5,7 @@ import os
 
 from typing import Union, Optional, Callable
 
-pygame.init()
+mouse_in_use = False
 
 
 def do_nothing():
@@ -77,20 +77,27 @@ class TextInput:
         screen.blit(self.surface, self.surface_rect)
 
     def update(self, mouse_position: tuple[float, float], event: pygame.event.Event):
+        global mouse_in_use
+
         pygame.draw.rect(self.surface, self.background, pygame.Rect(0, 0, self.width, self.height), 0,
                          self.border_radius)
         pygame.draw.rect(self.surface, self.border_color, pygame.Rect(0, 0, self.width, self.height),
                          self.border_width, self.border_radius)
 
-        if self.surface_rect.collidepoint(mouse_position):
+        if self.surface_rect.collidepoint(mouse_position) and not mouse_in_use:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
             if pygame.mouse.get_pressed()[0]:
                 self.is_active = True
                 self.cursor_position = len(self.text)
-        else:
+                mouse_in_use = True
+        if not self.surface_rect.collidepoint(mouse_position):
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             if pygame.mouse.get_pressed()[0]:
                 self.is_active = False
+                mouse_in_use = True
+
+        if not pygame.mouse.get_pressed()[0]:
+            mouse_in_use = False
 
         txt = self.font.render(self.text, True, self.foreground)
         txt_rect = txt.get_rect()
@@ -225,6 +232,8 @@ class Button:
         self.surface.blit(foreground_surface, foreground_rect)
 
     def update(self, mouse_position: tuple[float, float]):
+        global mouse_in_use
+
         if self.disabled:
             pygame.draw.rect(self.surface, self.background[3], self.rect, 0, self.border_radius)
             pygame.draw.rect(self.surface, self.border_color[3], self.rect, self.border_width, self.border_radius)
@@ -245,7 +254,7 @@ class Button:
 
                     self.command()
                     self.clicked = True
-                    pygame.mouse.in_use = True
+                    mouse_in_use = True
 
                 if not pygame.mouse.get_pressed()[0]:
                     pygame.draw.rect(self.surface, self.background[1], self.rect, 0, self.border_radius)
@@ -260,7 +269,7 @@ class Button:
                 self.draw_foreground()
 
                 self.clicked = False
-                pygame.mouse.in_use = False
+                mouse_in_use = False
 
 
 class ToggleableButton(Button):
@@ -303,6 +312,8 @@ class ToggleableButton(Button):
         self.linked_with = []
 
     def update(self, mouse_position: tuple[float, float]):
+        global mouse_in_use
+
         if self.disabled:
             self.is_active = False
             pygame.draw.rect(self.surface, self.background[4], self.rect, 0, self.border_radius)
@@ -315,7 +326,7 @@ class ToggleableButton(Button):
             if self.is_active:
                 self.command()
 
-            if self.surface_rect.collidepoint(mouse_position) and not pygame.mouse.in_use:
+            if self.surface_rect.collidepoint(mouse_position) and not mouse_in_use:
                 if self.is_active:
                     pygame.draw.rect(self.surface, self.background[3], self.rect, 0, self.border_radius)
                     pygame.draw.rect(self.surface, self.border_color[3], self.rect, self.border_width,
@@ -335,7 +346,7 @@ class ToggleableButton(Button):
                         for btn in self.linked_with:
                             btn.is_active = False
                         is_active = True
-                        pygame.mouse.in_use = True
+                        mouse_in_use = True
                     self.is_active = is_active
                     self.clicked = True
             else:
@@ -354,7 +365,7 @@ class ToggleableButton(Button):
 
             if not pygame.mouse.get_pressed()[0]:
                 self.clicked = False
-                pygame.mouse.in_use = False
+                mouse_in_use = False
 
 
 class Slider:
@@ -406,14 +417,16 @@ class Slider:
         pygame.draw.circle(screen, self.color, (self.blob_x+4, self.position[1]+11), 4)
 
     def update(self):
+        global mouse_in_use
+
         cdtn = pygame.Rect(self.position[0], self.position[1]-9, self.length, 15).collidepoint(pygame.mouse.get_pos())
-        if cdtn and not pygame.mouse.in_use:
+        if cdtn and not mouse_in_use:
             if pygame.mouse.get_pressed()[0]:
                 self.clicked = True
-                pygame.mouse.in_use = True
+                mouse_in_use = True
         if not pygame.mouse.get_pressed()[0]:
             self.clicked = False
-            pygame.mouse.in_use = False
+            mouse_in_use = False
         if self.clicked:
             self.blob_x = pygame.mouse.get_pos()[0]-4
             if self.blob_x < self.position[0]-4:
@@ -455,19 +468,21 @@ class ScrollBar:
         screen.blit(self.surface, self.surface_rect)
 
     def update(self, mouse_position):
+        global mouse_in_use
+
         self.surface.fill(self.background)
-        if self.slider.collidepoint(mouse_position[0]-self.surface_rect.left, mouse_position[1]-self.surface_rect.top):
+        if self.slider.collidepoint(mouse_position[0]-self.surface_rect.left, mouse_position[1]-self.surface_rect.top) and not mouse_in_use:
             pygame.draw.rect(self.surface, self.slider_color[1], self.slider)
             if pygame.mouse.get_pressed()[0] and not self.clicked:
                 self.clicked = True
-                pygame.mouse.in_use = True
+                mouse_in_use = True
                 self.rel = self.slider.top-mouse_position[1]
         else:
             pygame.draw.rect(self.surface, self.slider_color[0], self.slider)
 
         if not pygame.mouse.get_pressed()[0]:
             self.clicked = False
-            pygame.mouse.in_use = False
+            mouse_in_use = False
 
         if self.clicked:
             pygame.draw.rect(self.surface, self.slider_color[2], self.slider)
@@ -547,9 +562,21 @@ class FilesScreen:
         self.files_surface_clip = pygame.Rect(0, 0, self.size[0]-20, self.filesSurface_height)
         self.files_surface.fill("#ffffff")
 
+        self.button_images = []
+
+        for i in range(len(self.files)):
+            extension = os.path.splitext(self.files[i])[1]
+            if extension in [".png", ".jpg", ".jpeg"]:
+                self.button_images.append(
+                    pygame.transform.scale(pygame.image.load("MyPaintings/"+self.files[i]), (120, 120))
+                )
+            else:
+                self.button_images.append(
+                    pygame.Surface((120, 120))
+                )
         self.file_buttons = [ToggleableButton(
             (140, 160), (90 + (i % 3)*160, 100 + (i//3)*180),
-            image=pygame.transform.scale(pygame.image.load("MyPaintings/"+self.files[i]), (120, 120)),
+            image=self.button_images[i],
             text=self.files[i][:-4],
             font=pygame.font.Font("freesansbold.ttf", 17),
             background=["#ffffff", "#e5f3ff", "#cce8ff", "#cce8ff"],
