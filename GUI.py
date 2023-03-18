@@ -5,6 +5,7 @@ import os
 
 from typing import Union, Optional, Callable
 
+pygame.init()
 mouse_in_use = False
 
 
