@@ -514,8 +514,6 @@ class FilesScreen:
         self.screen_rect.topleft = self.position
         # ______________________________________________________________________________________________________________
 
-        self.titleBar_font = pygame.font.Font("freesansbold.ttf", 15)
-
         self.title_bar_height = 30
         self.title_bar = pygame.Surface((self.size[0], self.title_bar_height))
         self.title_bar.fill("#efefef")
@@ -524,12 +522,12 @@ class FilesScreen:
 
         self.quit_button = Button(
             (40, 30), (self.size[0]-20, 15),
-            text="X", font=pygame.font.Font("freesansbold.ttf", 15),
+            text="X", font=pygame.font.SysFont("arial", 20, bold=True),
             background=["#efefef", "#ff4444", "#444444"], foreground=["#000000", "#efefef", "#ffffff"],
             border_width=1, border_radius=0, command=self.exit
         )
 
-        self.title = self.titleBar_font.render(open_or_save.upper(), False, "#000000")
+        self.title = pygame.font.SysFont("calibri", 25, bold=True).render(open_or_save.upper(), False, "#000000")
         self.title_rect = self.title.get_rect()
         self.title_rect.midleft = (10, self.title_bar_height / 2)
 
@@ -541,7 +539,7 @@ class FilesScreen:
         self.bottom_area = pygame.Surface((self.size[0], self.bottomArea_height))
         self.bottom_area.fill("#f0f0f0")
 
-        self.label_fileName = Label((10, 30), text="File Name: ", font=pygame.font.Font("freesansbold.ttf", 18))
+        self.label_fileName = Label((10, 30), text="File Name: ", font=pygame.font.SysFont("calibri", 23))
         self.text_input = TextInput((50+self.size[0]/2, 30), length=380)
 
         self.ok_button = Button((80, 20), (360, 65), text="OK", command=lambda: self.exit(True))
