@@ -13,6 +13,12 @@ def do_nothing():
     pass
 
 
+def update_mouse():
+    global mouse_in_use
+    if not pygame.mouse.get_pressed()[0]:
+        mouse_in_use = False
+
+
 class Label:
     def __init__(
         self, position: Union[tuple[float, float], list[float, float]],
@@ -96,9 +102,6 @@ class TextInput:
             if pygame.mouse.get_pressed()[0]:
                 self.is_active = False
                 mouse_in_use = True
-
-        if not pygame.mouse.get_pressed()[0]:
-            mouse_in_use = False
 
         txt = self.font.render(self.text, True, self.foreground)
         txt_rect = txt.get_rect()
@@ -245,7 +248,7 @@ class Button:
             else:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
         else:
-            if self.surface_rect.collidepoint(mouse_position) and not pygame.mouse.in_use:
+            if self.surface_rect.collidepoint(mouse_position) and not mouse_in_use:
                 if pygame.mouse.get_pressed()[0] and not self.clicked:
                     pygame.draw.rect(self.surface, self.background[2], self.rect, 0, self.border_radius)
                     pygame.draw.rect(self.surface, self.border_color[2], self.rect,
@@ -270,7 +273,6 @@ class Button:
                 self.draw_foreground()
 
                 self.clicked = False
-                mouse_in_use = False
 
 
 class ToggleableButton(Button):
@@ -366,7 +368,6 @@ class ToggleableButton(Button):
 
             if not pygame.mouse.get_pressed()[0]:
                 self.clicked = False
-                mouse_in_use = False
 
 
 class Slider:
@@ -417,17 +418,16 @@ class Slider:
         pygame.draw.circle(screen, self.color, (self.blob_x+4, self.position[1]-5), 4)
         pygame.draw.circle(screen, self.color, (self.blob_x+4, self.position[1]+11), 4)
 
-    def update(self):
+    def update(self, mouse_position):
         global mouse_in_use
 
-        cdtn = pygame.Rect(self.position[0], self.position[1]-9, self.length, 15).collidepoint(pygame.mouse.get_pos())
+        cdtn = pygame.Rect(self.position[0], self.position[1]-9, self.length, 15).collidepoint(mouse_position)
         if cdtn and not mouse_in_use:
             if pygame.mouse.get_pressed()[0]:
                 self.clicked = True
                 mouse_in_use = True
         if not pygame.mouse.get_pressed()[0]:
             self.clicked = False
-            mouse_in_use = False
         if self.clicked:
             self.blob_x = pygame.mouse.get_pos()[0]-4
             if self.blob_x < self.position[0]-4:
@@ -483,7 +483,6 @@ class ScrollBar:
 
         if not pygame.mouse.get_pressed()[0]:
             self.clicked = False
-            mouse_in_use = False
 
         if self.clicked:
             pygame.draw.rect(self.surface, self.slider_color[2], self.slider)
@@ -609,6 +608,7 @@ class FilesScreen:
     def draw(self, screen):
         screen.blit(self.screen, self.screen_rect)
         pygame.draw.rect(screen, "#000000", pygame.Rect(self.position, self.size), 1)
+        self.text_input.draw(self.bottom_area)
 
     def update_title_bar(self, mouse_position):
         self.draw_titleBar()
@@ -648,19 +648,19 @@ class FilesScreen:
 
     def update_bottom_area(self, mouse_position, event):
         self.draw_bottom_area()
-        mouse_position = (mouse_position[0]-self.position[0],
-                          mouse_position[1]-self.position[1]-self.size[1]+self.bottomArea_height)
+        mouse_pos = (mouse_position[0] - self.position[0],
+                     mouse_position[1] - self.position[1] - self.size[1] + self.bottomArea_height)
 
         self.label_fileName.draw(self.bottom_area)
 
-        self.text_input.draw(self.bottom_area)
-        self.text_input.update(mouse_position, event)
-
         self.ok_button.draw(self.bottom_area)
-        self.ok_button.update(mouse_position)
+        self.ok_button.update(mouse_pos)
 
         self.cancel_button.draw(self.bottom_area)
-        self.cancel_button.update(mouse_position)
+        self.cancel_button.update(mouse_pos)
+
+        self.text_input.draw(self.bottom_area)
+        self.text_input.update(mouse_pos, event)
 
     def update(self, mouse_position, event):
         self.update_title_bar(mouse_position)
