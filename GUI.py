@@ -3,7 +3,7 @@ from pygame import Color as pgClr
 
 import os
 
-from typing import Union, Optional, Callable
+from typing import Union, Optional, Callable, Iterable, Any
 
 pygame.init()
 mouse_in_use = False
@@ -171,7 +171,8 @@ class Button:
         border_width: int = 1,
         border_radius: int = 4,
         disabled: bool = False,
-        command: Callable = do_nothing
+        command: Callable = do_nothing,
+        args: Iterable[Any] = ()
     ):
         self.surface = pygame.Surface(size, pygame.SRCALPHA)
         self.surface_rect = self.surface.get_rect()
@@ -200,6 +201,7 @@ class Button:
         self.disabled = disabled
 
         self.command = command
+        self.command_args = args
 
         self.clicked = False
 
@@ -256,7 +258,7 @@ class Button:
                     self.set_text_color(self.foreground[2])
                     self.draw_foreground()
 
-                    self.command()
+                    self.command(*self.command_args)
                     self.clicked = True
                     mouse_in_use = True
 
@@ -301,14 +303,15 @@ class ToggleableButton(Button):
         border_width: int = 1,
         border_radius: int = 4,
         disabled: bool = False,
-        command: Callable = do_nothing
+        command: Callable = do_nothing,
+        args: Iterable[Any] = ()
     ):
         super().__init__(
             size, position,
             image, text, font,
             background, foreground,
             border_color, border_width, border_radius,
-            disabled, command
+            disabled, command, args
         )
         self.is_active = False
 
@@ -327,7 +330,7 @@ class ToggleableButton(Button):
 
         else:
             if self.is_active:
-                self.command()
+                self.command(*self.command_args)
 
             if self.surface_rect.collidepoint(mouse_position) and not mouse_in_use:
                 if self.is_active:
@@ -543,7 +546,7 @@ class FilesScreen:
         self.text_input = TextInput((50+self.size[0]/2, 30), length=380)
 
         self.ok_button = Button((80, 20), (360, 65), text="OK", command=lambda: self.exit(True))
-        self.cancel_button = Button((80, 20), (460, 65), text="CANCEL", command=self.exit)
+        self.cancel_button = Button((80, 20), (460, 65), text="CANCEL", command=lambda: self.exit(False))
 
         self.text_input.draw(self.bottom_area)
         self.text_input.invalid_chars = ["\\", "/", "|", ":", "*", "<", ">", "?", "\""]
